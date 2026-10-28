@@ -204,3 +204,5 @@ st.download_button(
     file_name=f"Аналитический_обзор_{datetime.now().strftime('%Y%m%d')}.docx",
     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 )
+else:
+    st.info("Загрузите файл .docx, чтобы начать анализ")
