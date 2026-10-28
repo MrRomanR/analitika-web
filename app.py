@@ -34,17 +34,15 @@ st.write("Загрузите Word-документ для анализа")
 
 uploaded_file = st.file_uploader("Выберите файл .docx", type="docx")
 
-if st.button("Сделать анализ"):
-    if not uploaded_file:
-        st.warning("Сначала загрузите файл")
-        st.stop()
-    with st.spinner("Обрабатываю документ..."):
-        doc = Document(uploaded_file)
-        text = "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
-        
-        client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
-        
-        SYSTEM_PROMPT = """1. Общий принцип работы
+if uploaded_file is not None:
+    if st.button("Сделать анализ"):
+        with st.spinner("Обрабатываю документ..."):
+            doc = Document(uploaded_file)
+            text = "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
+            
+            client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
+            
+            SYSTEM_PROMPT = """1. Общий принцип работы
 Работа строится строго на загруженных документах (медиамониторинги, ежемесячные сборники негатива, пояснительные записки к проектам). Ничего не выдумывается и не дополняется внешними знаниями, кроме логических выводов и рекомендаций, прямо следующих из содержания документов.
 Цель — получить:
 - структурированное саммари,
@@ -115,3 +113,67 @@ if st.button("Сделать анализ"):
 - Синтезируй, не копируй дословно.
 
 Сделай анализ строго по этой инструкции. Определи тип документа и примени соответствующую структуру."""
+            
+            response = client.chat.completions.create(
+                model="grok-4.7",
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": f"Документ:\n\n{text}"}
+                ],
+                temperature=0.2
+            )
+            
+            result = response.choices[0].message.content
+            
+            output_doc = Document()
+            style = output_doc.styles['Normal']
+            style.font.name = 'Times New Roman'
+            style.font.size = Pt(14)
+            
+            title = output_doc.add_paragraph()
+            run = title.add_run("АНАЛИТИЧЕСКИЙ ОБЗОР")
+            run.bold = True
+            run.font.size = Pt(16)
+            title.alignment = 1
+            
+            subtitle = output_doc.add_paragraph()
+            sub_run = subtitle.add_run("ежемесячного сборника сообщений, содержащих значимую негативную информацию")
+            sub_run.italic = True
+            sub_run.font.size = Pt(12)
+            subtitle.alignment = 1
+            
+            for line in result.split("\n"):
+                line = line.strip()
+                if not line:
+                    continue
+                clean = line.replace("**", "").replace("*", "").strip()
+                
+                is_heading = any(clean.startswith(x) for x in ["Часть ", "Тема ", "Общий характер", "Рекомендации", "Вводная"])
+                
+                if is_heading:
+                    p = output_doc.add_paragraph()
+                    r = p.add_run(clean)
+                    r.bold = True
+                    r.font.size = Pt(14)
+                else:
+                    p = output_doc.add_paragraph(clean)
+                    p.alignment = 3
+                    p.paragraph_format.first_line_indent = Pt(20)
+            
+            date_p = output_doc.add_paragraph()
+            date_p.add_run(f"\nДата: {datetime.now().strftime('%d.%m.%Y')}").italic = True
+            date_p.alignment = 2
+            
+            buffer = io.BytesIO()
+            output_doc.save(buffer)
+            buffer.seek(0)
+            
+            st.success("Готово!")
+            st.download_button(
+                label="Скачать аналитический обзор",
+                data=buffer,
+                file_name=f"Аналитический_обзор_{datetime.now().strftime('%Y%m%d')}.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            )
+else:
+    st.info("Загрузите файл .docx, чтобы начать анализ")
