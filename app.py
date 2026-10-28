@@ -34,7 +34,10 @@ st.write("Загрузите Word-документ для анализа")
 
 uploaded_file = st.file_uploader("Выберите файл .docx", type="docx")
 
-if uploaded_file and st.button("Сделать анализ"):
+if st.button("Сделать анализ"):
+    if not uploaded_file:
+        st.warning("Сначала загрузите файл")
+        st.stop()
     with st.spinner("Обрабатываю документ..."):
         doc = Document(uploaded_file)
         text = "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
