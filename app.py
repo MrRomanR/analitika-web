@@ -126,83 +126,80 @@ if uploaded_file is not None:
             result = response.choices[0].message.content
             
             output_doc = Document()
-style = output_doc.styles['Normal']
-style.font.name = 'Times New Roman'
-style.font.size = Pt(14)
-
-# Заголовок документа
-title = output_doc.add_paragraph()
-run = title.add_run("АНАЛИТИЧЕСКИЙ ОБЗОР")
-run.bold = True
-run.font.name = 'Times New Roman'
-run.font.size = Pt(16)
-title.alignment = 1
-title.paragraph_format.space_after = Pt(4)
-
-subtitle = output_doc.add_paragraph()
-sub_run = subtitle.add_run("ежемесячного сборника сообщений, содержащих значимую негативную информацию")
-sub_run.font.name = 'Times New Roman'
-sub_run.font.size = Pt(12)
-sub_run.italic = True
-subtitle.alignment = 1
-subtitle.paragraph_format.space_after = Pt(14)
-
-for line in result.split("\n"):
-    line = line.strip()
-    if not line:
-        continue
-    clean = line.replace("**", "").replace("*", "").strip()
-    
-    # Определяем заголовки
-    is_heading = any(clean.startswith(x) for x in [
-        "Часть ", "Тема ", "Общий характер", "Рекомендации", "Вводная"
-    ]) or (len(clean) < 90 and clean[0].isupper() and not clean.endswith("."))
-    
-    if is_heading:
-        p = output_doc.add_paragraph()
-        r = p.add_run(clean)
-        r.bold = True
-        r.font.name = 'Times New Roman'
-        r.font.size = Pt(14)
-        p.paragraph_format.space_before = Pt(12)
-        p.paragraph_format.space_after = Pt(6)
-        p.paragraph_format.line_spacing = 1.15
-    elif clean.startswith("- ") or clean.startswith("• ") or (clean[0].isdigit() and ". " in clean[:5]):
-        p = output_doc.add_paragraph(style="List Bullet")
-        r = p.add_run(clean.lstrip("-•0123456789. ").strip())
-        r.font.name = 'Times New Roman'
-        r.font.size = Pt(14)
-        p.paragraph_format.space_after = Pt(3)
-        p.paragraph_format.line_spacing = 1.15
-    else:
-        p = output_doc.add_paragraph(clean)
-        for run in p.runs:
+            style = output_doc.styles['Normal']
+            style.font.name = 'Times New Roman'
+            style.font.size = Pt(14)
+            
+            title = output_doc.add_paragraph()
+            run = title.add_run("АНАЛИТИЧЕСКИЙ ОБЗОР")
+            run.bold = True
             run.font.name = 'Times New Roman'
-            run.font.size = Pt(14)
-        p.alignment = 3  # по ширине
-        p.paragraph_format.space_after = Pt(8)
-        p.paragraph_format.line_spacing = 1.15
-        p.paragraph_format.first_line_indent = Pt(20)
-
-# Дата
-date_p = output_doc.add_paragraph()
-date_run = date_p.add_run(f"\nДата: {datetime.now().strftime('%d.%m.%Y')}")
-date_run.font.name = 'Times New Roman'
-date_run.font.size = Pt(12)
-date_run.italic = True
-date_p.alignment = 2
-date_p.paragraph_format.space_before = Pt(12)
-
-buffer = io.BytesIO()
-output_doc.save(buffer)
-buffer.seek(0)
-
-st.success("Готово!")
-st.download_button(
-    label="Скачать аналитический обзор",
-    data=buffer,
-    file_name=f"Аналитический_обзор_{datetime.now().strftime('%Y%m%d')}.docx",
-    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-)
+            run.font.size = Pt(16)
+            title.alignment = 1
+            title.paragraph_format.space_after = Pt(4)
+            
+            subtitle = output_doc.add_paragraph()
+            sub_run = subtitle.add_run("ежемесячного сборника сообщений, содержащих значимую негативную информацию")
+            sub_run.font.name = 'Times New Roman'
+            sub_run.font.size = Pt(12)
+            sub_run.italic = True
+            subtitle.alignment = 1
+            subtitle.paragraph_format.space_after = Pt(14)
+            
+            for line in result.split("\n"):
+                line = line.strip()
+                if not line:
+                    continue
+                clean = line.replace("**", "").replace("*", "").strip()
+                
+                is_heading = any(clean.startswith(x) for x in [
+                    "Часть ", "Тема ", "Общий характер", "Рекомендации", "Вводная"
+                ]) or (len(clean) < 90 and clean[0].isupper() and not clean.endswith("."))
+                
+                if is_heading:
+                    p = output_doc.add_paragraph()
+                    r = p.add_run(clean)
+                    r.bold = True
+                    r.font.name = 'Times New Roman'
+                    r.font.size = Pt(14)
+                    p.paragraph_format.space_before = Pt(12)
+                    p.paragraph_format.space_after = Pt(6)
+                    p.paragraph_format.line_spacing = 1.15
+                elif clean.startswith("- ") or clean.startswith("• ") or (clean[0].isdigit() and ". " in clean[:5]):
+                    p = output_doc.add_paragraph(style="List Bullet")
+                    r = p.add_run(clean.lstrip("-•0123456789. ").strip())
+                    r.font.name = 'Times New Roman'
+                    r.font.size = Pt(14)
+                    p.paragraph_format.space_after = Pt(3)
+                    p.paragraph_format.line_spacing = 1.15
+                else:
+                    p = output_doc.add_paragraph(clean)
+                    for run in p.runs:
+                        run.font.name = 'Times New Roman'
+                        run.font.size = Pt(14)
+                    p.alignment = 3
+                    p.paragraph_format.space_after = Pt(8)
+                    p.paragraph_format.line_spacing = 1.15
+                    p.paragraph_format.first_line_indent = Pt(20)
+            
+            date_p = output_doc.add_paragraph()
+            date_run = date_p.add_run(f"\nДата: {datetime.now().strftime('%d.%m.%Y')}")
+            date_run.font.name = 'Times New Roman'
+            date_run.font.size = Pt(12)
+            date_run.italic = True
+            date_p.alignment = 2
+            date_p.paragraph_format.space_before = Pt(12)
+            
+            buffer = io.BytesIO()
+            output_doc.save(buffer)
+            buffer.seek(0)
+            
+            st.success("Готово!")
+            st.download_button(
+                label="Скачать аналитический обзор",
+                data=buffer,
+                file_name=f"Аналитический_обзор_{datetime.now().strftime('%Y%m%d')}.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            )
 else:
     st.info("Загрузите файл .docx, чтобы начать анализ")
